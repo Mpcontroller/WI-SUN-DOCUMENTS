@@ -1,0 +1,163 @@
+app_update      = 0
+boot_update     = 1
+
+app_prompt      = '>'
+app_update_cmd  = 'A'
+app_next_cmd    = 'g'
+
+pass_prompt     = 'Password: '
+password        = 'password'
+boot_prompt     = '[Boot]: '
+boot_update_cmd = 'B'
+boot_next_cmd   = 'r'
+
+getdir macro_dir
+
+baudrate = 115200
+
+; Connect COM port
+testlink
+if result != 2 then
+	inputbox 'COM port number' 'COM port'
+	str2int port inputstr
+	if result != 1 then
+		sprintf2 errmsg 'Invalid COM port number [%s]' inputstr
+		messagebox errmsg 'error'
+		exit
+	endif
+
+	sprintf2 arg '/C=%d' port
+	connect arg
+	if result != 2 then
+		sprintf2 errmsg 'COM%d connect failure' port
+		messagebox errmsg 'error'
+		exit
+	endif
+	setbaud 115200
+endif
+
+; Get image path
+bin_filename = param1
+strreplace bin_filename 1 '\.ttl' '.bin'
+sprintf2 imagefile '%s\%s' macro_dir bin_filename
+
+filesearch imagefile
+if result == 0 then
+	sprintf2 errmsg 'Image file [%s] not found' imagefile
+	messagebox errmsg 'error'
+	exit
+endif
+
+; Update image
+if boot_update == 1 then
+	update_cmd  = boot_update_cmd
+	next_cmd    = boot_next_cmd
+elseif app_update == 1 then
+	update_cmd = app_update_cmd
+	next_cmd   = app_next_cmd
+endif
+
+; Goto boot command mode
+timeout  = 0
+mtimeout = 500
+
+sendln ''
+wait app_prompt boot_prompt pass_prompt
+if result == 2 then
+elseif result == 3 then
+	while 1
+		sendln password
+		wait boot_prompt
+		if result == 1 then
+			break
+		endif
+	endwhile
+else
+	if result == 0 then
+		sendln 'echo 1'
+		wait app_prompt
+	endif
+
+	if result == 1 then
+		timeout = 0
+		mtimeout = 0
+
+		sendln 'admin 1'
+		wait app_prompt
+
+		sendln 'baud'
+		waitln 'baud '
+		strtrim inputstr 'baud '
+		str2int baudrate inputstr
+		wait app_prompt
+
+		sendln 'reset 0 0'
+
+		mpause 500
+
+		timeout  = 0
+		mtimeout = 100
+	endif
+
+	setbaud 115200
+
+	while 1
+		send '@'
+		wait boot_prompt pass_prompt
+		if result == 1 then
+			break
+		elseif result == 2 then
+			while 1
+				sendln password
+				wait boot_prompt
+				if result == 1 then
+					break
+				endif
+			endwhile
+		endif
+	endwhile
+endif
+
+timeout = 0
+mtimeout = 0
+
+; Update flash
+update_ok = 0
+
+send update_cmd
+
+sendln 'Yes'
+waitln 'Baudrate change'
+strscan  inputstr '-> '
+strremove inputstr 1 result+2
+strreplace inputstr 1 ' bps]' ''
+str2int update_baud inputstr
+
+setbaud update_baud
+
+waitln 'Download' 'Failure'
+if result == 1 then
+	ymodemsend imagefile
+
+	waitln 'Success' 'Failure'
+	if result == 1 then
+		update_ok = 1
+	endif
+endif
+
+waitln 'Baudrate change'
+setbaud 115200
+
+wait boot_prompt
+
+if update_ok == 0 then
+	exit
+endif
+
+sendln ''
+wait boot_prompt
+sendln next_cmd
+
+if update_ok == 1 then
+	setbaud baudrate
+endif

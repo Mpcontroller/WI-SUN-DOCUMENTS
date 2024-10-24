@@ -1,0 +1,56 @@
+send 'init 0' #13
+wait '>'
+
+send 'mode 0' #13
+wait '>'
+
+send 'clear' #13
+wait '>'
+
+send 'reset' #13
+wait 'init'
+wait '>'
+
+;--------------------------------------
+; MAC Address Filtering
+;--------------------------------------
+send 'macf deny' #13
+wait '>'
+
+send 'macf allow 001d129f35c502f9' #13
+wait '>'
+
+send 'macf allow 001d129f35c50341' #13
+wait '>'
+
+send 'mode 1' #13
+wait '>'
+
+send 'chan 33 59' #13
+wait '>'
+
+send 'ip 2001:db8::1/48' #13
+wait '>'
+
+;--------------------------------------
+; DHCPv6 Setting
+;--------------------------------------
+send 'leaseip 001d129f35c502f9 2001:db8::2' #13
+wait '>'
+
+send 'leaseip 001d129f35c50341 2001:db8::3' #13
+wait '>'
+
+send 'leaseip 001d129f35c502d2 2001:db8::4' #13
+wait '>'
+
+send 'atstart 1' #13
+wait '>'
+
+send 'save' #13
+wait '>'
+
+send 'reset' #13
+wait 'init'
+wait '>'
+

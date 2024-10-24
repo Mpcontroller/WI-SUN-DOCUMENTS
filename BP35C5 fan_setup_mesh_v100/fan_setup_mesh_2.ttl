@@ -1,0 +1,40 @@
+send 'init 0' #13
+wait '>'
+
+send 'mode 0' #13
+wait '>'
+
+send 'clear' #13
+wait '>'
+
+send 'reset' #13
+wait 'init'
+wait '>'
+
+;--------------------------------------
+; MAC Address Filtering
+;--------------------------------------
+send 'macf deny' #13
+wait '>'
+
+send 'macf allow 001d129f35c50188' #13
+wait '>'
+
+send 'macf allow 001d129f35c502d2' #13
+wait '>'
+
+send 'mode 1' #13
+wait '>'
+
+send 'chan 33 59' #13
+wait '>'
+
+send 'atstart 2' #13
+wait '>'
+
+send 'save' #13
+wait '>'
+
+send 'reset' #13
+wait 'init'
+wait '>'
